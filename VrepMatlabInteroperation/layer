@@ -1,0 +1,43 @@
+vrep=remApi('remoteApi'); 
+vrep.simxFinish(-1); 
+clientID=vrep.simxStart('127.0.0.1',19999,true,true,5000,5);
+
+if (clientID>-1)
+    disp('connected')
+    
+vrep.simxLoadScene(clientID,'scence4.ttt',0,vrep.simx_opmode_oneshot_wait); 
+[res,objs]=vrep.simxGetObjects(clientID,vrep.sim_handle_all,vrep.simx_opmode_oneshot_wait);
+vrep.simxStartSimulation(clientID,vrep.simx_opmode_oneshot_wait);
+
+  for i=1:20
+
+
+[err, sick] = ...
+    vrep.simxGetObjectHandle(0,'SICK_S300_fast#0',...
+    vrep.simx_opmode_oneshot_wait);
+res = 19;
+
+while (res~=vrep.simx_return_ok)
+    [res,laser_scan]=vrep.simxReadStringStream(clientID,'measuredDataAtThisTime1',...
+        vrep.simx_opmode_streaming);
+end
+
+data = vrep.simxUnpackFloats(laser_scan);
+data = reshape(data,3,size(data,2)/3);
+%outer_hull = data(:,end-684:end)
+outer_hull = data(:,1:684)
+close all
+figure()
+plot(outer_hull(1,:),outer_hull(2,:),'k.')
+pause(0.2)
+
+[err0, Pioneer] = vrep.simxGetObjectHandle(clientID,'Pioneer_p3dx',vrep.simx_opmode_oneshot_wait)
+[err,pos] = vrep.simxGetObjectPosition(clientID,Pioneer,1,vrep.simx_opmode_oneshot_wait)
+[err,ori] = vrep.simxGetObjectOrientation(clientID,Pioneer,-1,vrep.simx_opmode_oneshot_wait)
+
+  end
+ vrep.simxPauseSimulation(clientID,vrep.simx_opmode_oneshot_wait);
+
+vrep.simxFinish(-1);
+end
+vrep.delete(); 
